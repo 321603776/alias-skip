@@ -9,22 +9,26 @@ const { mappings, rootpath: rootfile, allowedsuffix } = (<any>vscode.workspace.g
  * @returns 目标路径
  */
 const screeningPath = function (linetext: string, position: vscode.Position): any {
-  let c = /('.+')|(".+")/
+  let c = /('.+')|(".+")/g
   let arr = linetext.match(c)
   if (arr) {
-    let text = arr[0].substring(1, arr[0].length - 1)
-    const i = linetext.indexOf(text)
-    const columns = [i, i + text.length]
-    let [key, ...m] = text.split('/')
-    if (mappings.hasOwnProperty(key)) {
-      let e = mappings[key]
-      if (e[0] === '/') {
-        e = e.substring(1)
-      }
-      return {
-        path: path.join(e, ...m),
-        rang: new vscode.Range(position.line, columns[0], position.line, columns[1]),
-        columns
+    for (const item of arr) {
+      let text = item.substring(1, item.length - 1)
+      const i = linetext.indexOf(text)
+      const columns = [i, i + text.length]
+      if(position.character >= columns[0] && position.character < columns[1]) {
+        let [key, ...m] = text.split('/')
+        if (mappings.hasOwnProperty(key)) {
+          let e = mappings[key]
+          if (e[0] === '/') {
+            e = e.substring(1)
+          }
+          return {
+            path: path.join(e, ...m),
+            rang: new vscode.Range(position.line, columns[0], position.line, columns[1]),
+            columns
+          }
+        }
       }
     }
   }
@@ -90,16 +94,18 @@ const joiningSuffix = function (targetPath: string) {
  * @returns 目标路径的相对路径
  */
 const screeningRelativePath = function (linetext: any,position: vscode.Position) {
-  let arr = linetext.match(/('.+')|(".+")/) // 正则匹配
-  let text = ''
-  if (arr) {
-    text = arr[0].substring(1, arr[0].length - 1)
+  let arr = linetext.match(/('.+')|(".+")/g) // 正则匹配
+  for (const item of arr) {
+    let text = item.substring(1, item.length - 1)
     const i = linetext.indexOf(text)
     const columns = [i, i + text.length]
-    return {
-      text,
-      rang: new vscode.Range(position.line, columns[0], position.line, columns[1]),
-      columns
+    if (item && position.character >= columns[0] && position.character < columns[1]) {
+      
+      return {
+        text,
+        rang: new vscode.Range(position.line, columns[0], position.line, columns[1]),
+        columns
+      }
     }
   }
   return ''
